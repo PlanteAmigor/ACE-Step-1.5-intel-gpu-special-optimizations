@@ -2637,8 +2637,8 @@ class LLMHandler:
                 if streamer is not None:
                     streamer.put(next_tokens_unsqueezed)
 
-                # ---- GPU 冷却 + 降频检测 + 碎片监控：每 50 步休息 ----
-                if (step + 1) % 50 == 0 and step < max_new_tokens - 1:
+                # ---- GPU 冷却 + 降频检测 + 碎片监控：每 100/300 步休息 ----
+                if (step + 1) % 100 == 0 and step < max_new_tokens - 1:
                     step_elapsed = time.time() - _llm_step_t0
                     if len(_llm_step_times) >= 3:
                         _llm_step_times.append(step_elapsed)
@@ -2653,8 +2653,11 @@ class LLMHandler:
                     if hasattr(torch, 'xpu'):
                         torch.xpu.empty_cache()
                     _monitor_mem_frag(device=device, label=f"LLM-constrained step {step+1}")
-                    print(f"  💤 LLM 冷却：第 {step+1}/{max_new_tokens} token，休息 5 秒...")
-                    time.sleep(5)
+
+                    rest_sec = 30 if (step + 1) % 300 == 0 else 5
+                    label = "深度冷却" if rest_sec == 30 else "冷却"
+                    print(f"  💤 LLM {label}：第 {step+1}/{max_new_tokens} token，休息 {rest_sec} 秒...")
+                    time.sleep(rest_sec)
 
                 if should_stop:
                     break
@@ -2830,8 +2833,8 @@ class LLMHandler:
                 if streamer is not None:
                     streamer.put(next_tokens_unsqueezed)  # Stream conditional tokens
 
-                # ---- GPU 冷却 + 降频检测 + 碎片监控：每 50 步休息 ----
-                if (step + 1) % 50 == 0 and step < max_new_tokens - 1:
+                # ---- GPU 冷却 + 降频检测 + 碎片监控：每 100/300 步休息 ----
+                if (step + 1) % 100 == 0 and step < max_new_tokens - 1:
                     step_elapsed = time.time() - _llm_step_t0
                     if len(_llm_step_times) >= 3:
                         _llm_step_times.append(step_elapsed)
@@ -2846,8 +2849,11 @@ class LLMHandler:
                     if hasattr(torch, 'xpu'):
                         torch.xpu.empty_cache()
                     _monitor_mem_frag(device=device, label=f"LLM-CFG step {step+1}")
-                    print(f"  💤 LLM 冷却：第 {step+1}/{max_new_tokens} token，休息 5 秒...")
-                    time.sleep(5)
+
+                    rest_sec = 30 if (step + 1) % 300 == 0 else 5
+                    label = "深度冷却" if rest_sec == 30 else "冷却"
+                    print(f"  💤 LLM {label}：第 {step+1}/{max_new_tokens} token，休息 {rest_sec} 秒...")
+                    time.sleep(rest_sec)
 
                 # Stop generation only when ALL sequences have finished
                 if seq_finished.all():

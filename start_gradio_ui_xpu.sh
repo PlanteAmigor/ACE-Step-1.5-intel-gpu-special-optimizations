@@ -109,7 +109,7 @@ esac
 # Batch size: default batch size for generation (1 to GPU-dependent max)
 # When not specified, defaults to min(2, GPU_max)
 BATCH_SIZE="${BATCH_SIZE:-}"
-BATCH_SIZE="--batch_size 1"
+# BATCH_SIZE="--batch_size 1"
 
 # ==================== Model Configuration ====================
 : "${CONFIG_PATH:=--config_path acestep-v15-turbo}"
@@ -153,69 +153,6 @@ VENV_DIR="/run/media/amigor/Project/AItrain/ACE-Step-1.5/ACE-Step-1.5-0.1.8/venv
 
 # 自动释放端口（防止上次退出未清理）
 fuser -k ${PORT}/tcp 2>/dev/null || true
-
-# ==================== Startup Update Check ====================
-_startup_update_check() {
-    [[ "$CHECK_UPDATE" != "true" ]] && return 0
-    command -v git &>/dev/null || return 0
-    cd "$SCRIPT_DIR" || return 0
-    git rev-parse --git-dir &>/dev/null 2>&1 || return 0
-
-    local branch commit remote_commit
-    branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")"
-    commit="$(git rev-parse --short HEAD 2>/dev/null || echo "")"
-    [[ -z "$commit" ]] && return 0
-
-    echo "[Update] Checking for updates..."
-
-    local fetch_ok=0
-    if command -v timeout &>/dev/null; then
-        timeout 10 git fetch origin --quiet 2>/dev/null && fetch_ok=1
-    else
-        git fetch origin --quiet 2>/dev/null && fetch_ok=1
-    fi
-
-    if [[ $fetch_ok -eq 0 ]]; then
-        echo "[Update] Network unreachable, skipping."
-        echo ""
-        return 0
-    fi
-
-    remote_commit="$(git rev-parse --short "origin/$branch" 2>/dev/null || echo "")"
-
-    if [[ -z "$remote_commit" || "$commit" == "$remote_commit" ]]; then
-        echo "[Update] Already up to date ($commit)."
-        echo ""
-        return 0
-    fi
-
-    echo ""
-    echo "========================================"
-    echo "  Update available!"
-    echo "========================================"
-    echo "  Current: $commit  ->  Latest: $remote_commit"
-    echo ""
-    echo "  Recent changes:"
-    git --no-pager log --oneline "HEAD..origin/$branch" 2>/dev/null | head -10
-    echo ""
-
-    read -rp "Update now before starting? (Y/N): " update_choice
-    if [[ "${update_choice^^}" == "Y" ]]; then
-        if [[ -f "$SCRIPT_DIR/check_update.sh" ]]; then
-            bash "$SCRIPT_DIR/check_update.sh"
-        else
-            echo "Pulling latest changes..."
-            git pull --ff-only origin "$branch" 2>/dev/null || {
-                echo "[Update] Update failed. Please run: git pull"
-            }
-        fi
-    else
-        echo "[Update] Skipped. Run ./check_update.sh to update later."
-    fi
-    echo ""
-}
-
-_startup_update_check
 
 echo "============================================"
 echo "  ACE-Step 1.5 - Intel XPU Edition (Linux)"
