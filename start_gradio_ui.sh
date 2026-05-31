@@ -364,6 +364,9 @@ _ensure_legacy_nvidia_torch_compat
 echo "Starting ACE-Step Gradio UI..."
 echo
 
+# 记录 PID 到文件，方便关闭
+echo $$ > "$SCRIPT_DIR/.gradio_ui.pid"
+
 # Build command with optional parameters
 ACESTEP_ARGS="acestep --port $PORT --server-name $SERVER_NAME --language $LANGUAGE"
 [[ -n "$SHARE" ]] && ACESTEP_ARGS="$ACESTEP_ARGS $SHARE"

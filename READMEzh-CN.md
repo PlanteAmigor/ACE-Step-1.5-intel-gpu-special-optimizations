@@ -82,6 +82,18 @@ export TORCHAUDIO_USE_BACKEND=ffmpeg    # 避免 torchcodec
 - 验证 PyTorch XPU 是否可用
 - UTF-8 编码强制
 
+### 6. 🪪 PID 文件防止僵尸进程
+
+关闭终端后，`uv run` 启动的进程可能变成孤儿僵尸进程，持续占用 10+ GB 内存。本分支新增：
+
+- **`start_gradio_ui.sh`**：启动时将 PID 写入 `.gradio_ui.pid`
+- **`close_api_server.sh`**：优先检查 `.gradio_ui.pid`，杀掉对应进程并清理文件
+
+现在可以用以下命令干净地关闭 ACE-Step：
+```bash
+./close_api_server.sh
+```
+
 ---
 
 ## 已知问题
@@ -137,6 +149,8 @@ pip install -r requirements-xpu.txt
 | 文件 | 变更内容 |
 |------|---------|
 | `start_gradio_ui_xpu.sh` | **新增** — XPU 专用启动脚本 |
+| `start_gradio_ui.sh` | 新增 PID 文件 (`.gradio_ui.pid`)，防止僵尸进程 |
+| `close_api_server.sh` | 新增从 `.gradio_ui.pid` 自动关闭 Gradio UI |
 | `acestep/llm_inference.py` | 新增 `_monitor_mem_frag()` + LLM 冷却 + 模型卸载保护 |
 | `acestep/core/generation/handler/vae_decode_chunks.py` | VAE 解码冷却 + OOM 异常修复 |
 | `acestep/models/*/modeling_acestep_v15_*.py`（6 个文件） | DiT 扩散冷却（每 2 步 3 秒） |

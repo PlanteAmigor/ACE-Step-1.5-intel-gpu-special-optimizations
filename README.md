@@ -85,6 +85,18 @@ Additional features:
 - Verifies PyTorch XPU availability before launch
 - Enforces UTF-8 encoding
 
+### 6. 🪪 PID File for Zombie Process Prevention
+
+When the terminal is closed, `uv run` processes can become orphaned zombies, continuing to consume 10+ GB of memory. This fork adds:
+
+- **`start_gradio_ui.sh`**: Writes PID to `.gradio_ui.pid` at startup
+- **`close_api_server.sh`**: Checks `.gradio_ui.pid` first, kills the stored PID, and cleans up the file
+
+Now you can cleanly stop ACE-Step with:
+```bash
+./close_api_server.sh
+```
+
 ---
 
 ## Known Issues
@@ -142,6 +154,8 @@ pip install -r requirements-xpu.txt
 | File | Changes |
 |------|---------|
 | `start_gradio_ui_xpu.sh` | **New** — XPU-specific launch script |
+| `start_gradio_ui.sh` | Added PID file (`.gradio_ui.pid`) to prevent zombie processes |
+| `close_api_server.sh` | Added auto-kill for Gradio UI from `.gradio_ui.pid` |
 | `acestep/llm_inference.py` | Added `_monitor_mem_frag()` + LLM cooling + model offload protection |
 | `acestep/core/generation/handler/vae_decode_chunks.py` | VAE decode cooling + OOM exception fix |
 | `acestep/models/*/modeling_acestep_v15_*.py` (6 files) | DiT diffusion cooling (every 2 steps, 3 sec) |

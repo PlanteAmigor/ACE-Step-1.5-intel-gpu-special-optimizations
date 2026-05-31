@@ -14,12 +14,26 @@ Behavior:
 	- Otherwise, finds the listening PID(s) on --port and stops them.
 	- By default, only stops processes whose cmdline contains "uvicorn" or "acestep.api_server".
 		Use --force to skip this safety check.
+	- Also checks for .gradio_ui.pid (from start_gradio_ui.sh) and stops it.
 EOF
 }
 
 PORT="8002"
 PID=""
 FORCE="0"
+
+# 先检查 gradio UI PID 文件
+UI_PID_FILE="$(cd "$(dirname "$0")" && pwd)/.gradio_ui.pid"
+if [ -f "$UI_PID_FILE" ]; then
+	UI_PID=$(cat "$UI_PID_FILE" 2>/dev/null || echo "")
+	if [ -n "$UI_PID" ] && kill -0 "$UI_PID" 2>/dev/null; then
+		echo "Stopping Gradio UI (PID $UI_PID) from .gradio_ui.pid ..."
+		kill "$UI_PID" 2>/dev/null || true
+		sleep 1
+		kill -0 "$UI_PID" 2>/dev/null && kill -9 "$UI_PID" 2>/dev/null || true
+	fi
+	rm -f "$UI_PID_FILE"
+fi
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
